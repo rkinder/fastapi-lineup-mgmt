@@ -37,33 +37,6 @@ def get_db(request: Request):
     return request.state.db
 
 
-def check_hashed_password(password: str):
-    return password
-
-
-def decode_token(token: str, db: Session = Depends(get_db)):
-    #fake decoding the token to the test user
-    user_dict = crud.get_user_by_email(email=token, db=db)
-    if user_dict is None:
-        raise HTTPException(
-            status_code=404,
-            detail="User not found in database",
-            headers={"WWW-Authenticate":"Bearer"}
-        )
-    user = schemas.User(**user_dict)
-    return user
-
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    user = decode_token(token, db)
-    return user
-
-
-async def get_current_active_user(current_user: schemas.User = Depends(get_current_user)):
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive User")
-    return current_user
-
-
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -84,11 +57,6 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
-
-
-@app.get("/users/me", response_model=schemas.User)
-def read_user_me(current_user: schemas.User = Depends(get_current_active_user)):
-    return current_user
 
 
 @app.post("/users/{user_id}/items/", response_model=schemas.Player)
