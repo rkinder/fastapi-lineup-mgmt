@@ -5,7 +5,7 @@ from .database import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
@@ -16,12 +16,12 @@ class User(Base):
 
 
 class Player(Base):
-    __tablename__ = "players"
+    __tablename__ = "player"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     handicap = Column(Integer, index=True)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("user.id"))
 
     owner = relationship("User", back_populates="players")
 
