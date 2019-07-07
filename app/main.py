@@ -37,6 +37,11 @@ def get_db(request: Request):
     return request.state.db
 
 
+def check_hashed_password(password: str):
+    pwd = password
+    return pwd
+
+
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_email(db, email=user.email)
@@ -68,7 +73,7 @@ def create_item_for_user(
 
 @app.get("/items/", response_model=List[schemas.Player])
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    items = crud.get_items(db=db, skip=skip, limit=limit)
+    items = crud.get_items(db, skip=skip, limit=limit)
     return items
 
 
