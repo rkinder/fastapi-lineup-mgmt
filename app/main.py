@@ -160,7 +160,7 @@ async def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.post("/users/{user_id}/items/", response_model=schemas.Player)
+@app.post("/users/{user_id}/players/", response_model=schemas.Player)
 async def create_item_for_user(
     user_id: int, item: schemas.PlayerCreate, db: Session = Depends(get_db)
 ):
@@ -169,7 +169,7 @@ async def create_item_for_user(
 
 @app.get("/items/", response_model=List[schemas.Player])
 async def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    items = crud.get_items(db, skip=skip, limit=limit)
+    items = crud.get_players(db, skip=skip, limit=limit)
     return items
 
 
