@@ -167,7 +167,7 @@ async def create_item_for_user(
     return crud.create_user_item(db=db, item=item, user_id=user_id)
 
 
-@app.get("/items/", response_model=List[schemas.Player])
+@app.get("/players/", response_model=List[schemas.Player])
 async def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     items = crud.get_players(db, skip=skip, limit=limit)
     return items
