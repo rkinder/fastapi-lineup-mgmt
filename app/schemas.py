@@ -38,3 +38,12 @@ class User(UserBase):
 
 class UserInDB(User):
     hashed_password: str
+
+
+class TokenData(BaseModel):
+    email: str = None
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
