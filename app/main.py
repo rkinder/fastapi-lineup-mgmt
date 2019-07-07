@@ -2,6 +2,7 @@ from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.requests import Request
 from starlette.responses import Response
@@ -9,7 +10,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from . import crud, models, schemas
+from . import crud, models, schemas, auth
 from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -19,7 +20,6 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 @app.middleware("http")
 async def db_session_middleware(request: Request, call_next):
@@ -35,11 +35,6 @@ async def db_session_middleware(request: Request, call_next):
 # Dependencies
 def get_db(request: Request):
     return request.state.db
-
-
-def check_hashed_password(password: str):
-    pwd = password
-    return pwd
 
 
 @app.post("/users/", response_model=schemas.User)
@@ -64,6 +59,11 @@ def read_user(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
+@app.get("/users/me", response_model=schemas.User)
+def read_current_user_profile(current_user: schemas.User = Depends(auth.get_current_active_user)):
+    return current_user
+
+
 @app.post("/users/{user_id}/items/", response_model=schemas.Player)
 def create_item_for_user(
     user_id: int, item: schemas.PlayerCreate, db: Session = Depends(get_db)
@@ -72,7 +72,7 @@ def create_item_for_user(
 
 
 @app.get("/items/", response_model=List[schemas.Player])
-def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(auth.oauth2_scheme)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
 
@@ -82,13 +82,13 @@ async def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestF
     user = crud.get_user_by_email(db, form_data.username)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password (username)")
-    hashed_password = check_hashed_password(form_data.password)
+    hashed_password = auth.hash_password(form_data.password)
     if not hashed_password == user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect username or password (password)")
     return { "access_token": user.email, "token_type": "bearer" }
 
 
 @app.get("/debug/token/")
-async def debug_read_token(token: str = Depends(oauth2_scheme)):
+async def debug_read_token(token: str = Depends(auth.oauth2_scheme)):
     return{"token": token}
 
