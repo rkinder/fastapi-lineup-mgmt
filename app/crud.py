@@ -35,6 +35,9 @@ def get_players(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Player).offset(skip).limit(limit).all()
 
 
+def get_players_on_team(db: Session, team_number: int):
+    return db.query(models.Player).filter(models.Player.owner_id == team_number).all()
+
 def create_user_item(db: Session, item: schemas.PlayerCreate, user_id: int):
     db_item = models.Player(**item.dict(), owner_id=user_id)
     db.add(db_item)
