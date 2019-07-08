@@ -22,6 +22,7 @@ class Player(PlayerBase):
 
 class UserBase(BaseModel):
     email: str
+    max_handicap: int
 
 
 class UserCreate(UserBase):
