@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+import itertools
 import jwt
 from jwt import PyJWTError
 
@@ -29,6 +30,7 @@ from .database import SessionLocal, engine
 SECRET_KEY = "0e9f5655234f3f56a7633c7d159097f83ca9b90dc129c21015372b8100a7ba22"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+DEFAULT_MAX_HANDICAP = 24
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -126,8 +128,17 @@ async def get_current_active_user(current_user: schemas.User = Depends(get_curre
 ##########################################################################
 # User Functions
 ##########################################################################
-
-
+def find_all_possible_lineups(captain: schemas.User, max_handicap: int = DEFAULT_MAX_HANDICAP, db: Session = Depends(get_db)):
+    players = crud.get_players_on_team(db, team_number=captain.id)
+    qualifying_lineups = []
+    possible_lineups = list((itertools.combinations(players,5)))
+    for lineup in possible_lineups:
+        total_handicap = 0
+        for player in lineup:
+            total_handicap += player.handicap
+        if total_handicap < 24:
+            qualifying_lineups.append(lineup)
+    return qualifying_lineups
 
 
 ##############################################################################
@@ -171,6 +182,12 @@ async def create_item_for_user(
 async def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
     items = crud.get_players(db, skip=skip, limit=limit)
     return items
+
+
+@app.get("/players/{user_id}/lineups", response_model=List[List[schemas.Player]])
+async def find_lineups_for_team(db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_active_user)):
+    valid_lineups = find_all_possible_lineups(current_user, current_user.max_handicap, db)
+    return valid_lineups
 
 
 @app.post("/token", response_model=schemas.Token)
